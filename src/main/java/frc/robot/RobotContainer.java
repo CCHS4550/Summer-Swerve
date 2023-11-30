@@ -30,6 +30,8 @@ public class RobotContainer {
     SwerveDrive swerveDrive = new SwerveDrive();
     /** Event map for path planner */
     public static HashMap<String, Command> eventMap = new HashMap<>();
+
+
     /** Command List for auto paths in SmartDashBoard */
     LoggedDashboardChooser<CommandBase> autoCommands = new LoggedDashboardChooser<CommandBase>("Auto Commands");
 
@@ -58,6 +60,10 @@ Field2d ff;
     public RobotContainer() {
         SwerveDriveScheme.configure(swerveDrive, 0);
         // Testing.configure(swerveDrive, 0);
+        eventMap.put("Hello", Commands.runOnce(() -> System.out.println("HELLO WORLD"), swerveDrive));
+
+
+
         diagnosticsInit();
     }
 
@@ -67,7 +73,7 @@ Field2d ff;
             autoCommands.addOption(pathName, followPathPlanner(pathName).withName(pathName));
         }
         autoCommands.addDefaultOption("Nothing", Commands.run(() -> swerveDrive.printWorld(), swerveDrive).withName("Nothing"));
-        SmartDashboard.putData("Auto", autoCommands);
+        SmartDashboard.putData("Auto", autoCommands.getSendableChooser());
         autoCommands.addOption("balance", new Balance(swerveDrive));
         autoCommands.addOption("Move Straight", swerveDrive.moveCommand().withName("Move Straight"));
         
@@ -77,7 +83,7 @@ Field2d ff;
 
     public Command getAutoCommand() {
         // return new Autonomous(selector.value(), swerveDrive);
-        return autoCommands.getSelected();
+        return autoCommands.get();
         
         // PathPlannerTrajectory traj = PathPlanner.loadPath("zero",
         //         RobotMap.AUTO_PATH_CONSTRAINTS);

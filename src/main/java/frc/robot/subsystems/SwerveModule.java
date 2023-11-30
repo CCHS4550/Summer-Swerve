@@ -47,20 +47,59 @@ public class SwerveModule extends SubsystemBase {
         this.turnMotor = turnMotor;
 
         this.absoluteEncoder = new AnalogEncoder(absoluteEncoderChannel);
-
         this.absoluteEncoder.setDistancePerRotation(2 * Math.PI);
-
-        // this.absoluteEncoder.setPositionOffset(absoluteEncoderOffset);
         this.absoluteEncoderOffset = absoluteEncoderOffset;
+
         turningPIDController = new PIDController(.5, 0, 0);
         turningPIDController.enableContinuousInput(-Math.PI, Math.PI);
 
         drivingPidController = new PIDController(0.5, 0, 0);
 
-        //get constants from sysid
+        // get constants from sysid
         // driveVelocityFeedforward
         this.name = name;
         resetEncoders();
+    }
+
+    /**
+     * Sets the state of the module.
+     * 
+     * @param state The state to set the swerve module to in SwerveModuleState
+     *              format.
+     */
+    public void setDesiredState(SwerveModuleState state) {
+        if (Math.abs(state.speedMetersPerSecond) <= .005) {
+            stop();
+            return;
+        }
+        state = SwerveModuleState.optimize(state, getState().angle);
+        // integrate max speed here
+        // isOpenLoop would be true in teleop perhaps because some drivers, like ours
+        // prefers it that way
+
+        // double feedforwardVoltage =
+        // driveVelocityFeedforward.calculate(state.speedMetersPerSecond);
+        // if (isOpenLoop) {
+        // // Only using feedfoward here, no PID because in teleop we don't really need
+        // to correct it
+        // driveMotor.setVoltage(feedforwardVoltage);
+        // } else {
+        // driveMotor.setVoltage(feedforwardVoltage +
+        // drivingPidController.calculate(getDriveVelocity(),
+        // state.speedMetersPerSecond));
+        // }
+        // driveMotor.set(drivingPidController.calculate(getDriveVelocity(),
+        // state.speedMetersPerSecond));
+        driveMotor.set(state.speedMetersPerSecond);
+        turnMotor.set(turningPIDController.calculate(getTurnPosition(), state.angle.getRadians()));
+    }
+
+    /**
+     * Sets the speed of the drive and turn motors to 0.
+     */
+    public void stop() {
+        driveMotor.set(0);
+        turnMotor.set(0);
     }
 
     /**
@@ -116,7 +155,6 @@ public class SwerveModule extends SubsystemBase {
     public void resetEncoders() {
         driveMotor.reset();
         turnMotor.setPosition(getAbsoluteEncoderRadians());
-        // turnMotor.reset();
     }
 
     /**
@@ -126,39 +164,6 @@ public class SwerveModule extends SubsystemBase {
      */
     public SwerveModuleState getState() {
         return new SwerveModuleState(getDriveVelocity(), new Rotation2d(getTurnPosition()));
-    }
-
-    /**
-     * Sets the state of the module.
-     * @param state The state to set the swerve module to in SwerveModuleState format.
-     */
-    public void setDesiredState(SwerveModuleState state, boolean isOpenLoop){
-        if(Math.abs(state.speedMetersPerSecond) <= .005){
-            stop();
-            return;
-        }
-        state = SwerveModuleState.optimize(state, getState().angle);
-        //integrate max speed here
-            // isOpenLoop would be true in teleop perhaps because some drivers, like ours prefers it that way
-        
-        // double feedforwardVoltage = driveVelocityFeedforward.calculate(state.speedMetersPerSecond);
-        // if (isOpenLoop) {
-        //     // Only using feedfoward here, no PID because in teleop we don't really need to correct it
-        //     driveMotor.setVoltage(feedforwardVoltage);
-        // } else {
-        //     driveMotor.setVoltage(feedforwardVoltage + drivingPidController.calculate(getDriveVelocity(), state.speedMetersPerSecond));
-        // }
-        // driveMotor.set(drivingPidController.calculate(getDriveVelocity(), state.speedMetersPerSecond));
-        driveMotor.set(state.speedMetersPerSecond);
-        turnMotor.set(turningPIDController.calculate(getTurnPosition(), state.angle.getRadians()));
-    }
-
-    /**
-     * Sets the speed of the drive and turn motors to 0.
-     */
-    public void stop() {
-        driveMotor.set(0);
-        turnMotor.set(0);
     }
 
     /**
