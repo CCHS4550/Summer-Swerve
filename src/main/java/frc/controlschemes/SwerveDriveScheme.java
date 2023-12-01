@@ -2,8 +2,10 @@ package frc.controlschemes;
 
 import java.util.function.BooleanSupplier;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
@@ -26,6 +28,10 @@ public class SwerveDriveScheme implements ControlScheme {
     private static BooleanSupplier fieldCentricSupplier = () -> {
         return fieldCentric;
     };
+    private static boolean orientationLocked = false;
+
+    private static Rotation2d lockedOrientation = new Rotation2d();
+    private static PIDController orientationPID = new PIDController(0.5, 0, 0);
 
     /**
      * Configures the basic driving as well as buttons.
@@ -51,7 +57,12 @@ public class SwerveDriveScheme implements ControlScheme {
             //Possibly change the speed limiting to somewhere else (maybe a normalize function)
             xSpeed = xRateLimiter.calculate(xSpeed);
             ySpeed = yRateLimiter.calculate(ySpeed);
+            if (orientationLocked) {
+                turnSpeed = orientationPID.calculate(swerveDrive.getRotation2d().getRadians(),
+                        lockedOrientation.getRadians());
+            }
             turnSpeed = turnRateLimiter.calculate(turnSpeed);
+            
 
             //Constructs desired chassis speeds
             ChassisSpeeds chassisSpeeds;
@@ -83,13 +94,23 @@ public class SwerveDriveScheme implements ControlScheme {
         new JoystickButton(controllers[port], ControlMap.A_BUTTON)
             .onTrue(new InstantCommand(() -> swerveDrive.zeroHeading()));
         new JoystickButton(controllers[port], ControlMap.Y_BUTTON)
-            .onTrue(new InstantCommand(() -> swerveDrive.setOdometry(new Pose2d(0, 0, null))));   
+            .onTrue(new InstantCommand(() -> swerveDrive.setOdometry(new Pose2d(0, 0, null))));
+        new JoystickButton(controllers[port], ControlMap.RB_BUTTON)
+            .onTrue(new InstantCommand(() -> setOrientationLock(true, swerveDrive)))
+            .onFalse(new InstantCommand(() -> setOrientationLock(false, swerveDrive)));
     }
 
     /**
      * Toggle field centric and robot centric driving.
      */
-    private static void toggleFieldCentric(){
+    private static void toggleFieldCentric() {
         fieldCentric = !fieldCentric;
+    }
+    
+    private static void setOrientationLock(boolean locked, SwerveDrive swerveDrive) {
+        orientationLocked = locked;
+        if (locked) {
+            lockedOrientation = swerveDrive.getRotation2d();
+        }
     }
 }

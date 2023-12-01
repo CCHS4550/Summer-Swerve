@@ -2,6 +2,8 @@ package frc.robot;
 
 import java.util.HashMap;
 
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+
 import com.pathplanner.lib.PathConstraints;
 import com.pathplanner.lib.PathPlanner;
 import com.pathplanner.lib.PathPlannerTrajectory;
@@ -27,12 +29,12 @@ import frc.robot.subsystems.SwerveDrive;
 
 public class RobotContainer {
     SwerveDrive swerveDrive = new SwerveDrive();
-    Intake intake = new Intake();
-    Arm arm = new Arm();
     /** Event map for path planner */
     public static HashMap<String, Command> eventMap = new HashMap<>();
+
+
     /** Command List for auto paths in SmartDashBoard */
-    SendableChooser<CommandBase> autoCommands = new SendableChooser<CommandBase>();
+    LoggedDashboardChooser<CommandBase> autoCommands = new LoggedDashboardChooser<CommandBase>("Auto Commands");
 
     private final String[] paths = {"outback","out","outturn","turn", "move red","meters" };
     // private static String[] paths = { "move" };
@@ -58,8 +60,11 @@ Field2d ff;
     
     public RobotContainer() {
         SwerveDriveScheme.configure(swerveDrive, 0);
-        MechanismScheme.configure(intake, arm);
         // Testing.configure(swerveDrive, 0);
+        eventMap.put("Hello", Commands.runOnce(() -> System.out.println("HELLO WORLD"), swerveDrive));
+
+
+
         diagnosticsInit();
     }
 
@@ -68,8 +73,8 @@ Field2d ff;
         for (String pathName : paths) {
             autoCommands.addOption(pathName, followPathPlanner(pathName).withName(pathName));
         }
-        autoCommands.setDefaultOption("Nothing", Commands.run(() -> swerveDrive.printWorld(), swerveDrive).withName("Nothing"));
-        SmartDashboard.putData("Auto", autoCommands);
+        autoCommands.addDefaultOption("Nothing", Commands.run(() -> swerveDrive.printWorld(), swerveDrive).withName("Nothing"));
+        SmartDashboard.putData("Auto", autoCommands.getSendableChooser());
         autoCommands.addOption("balance", new Balance(swerveDrive));
         autoCommands.addOption("Move Straight", swerveDrive.moveCommand().withName("Move Straight"));
         
@@ -79,7 +84,7 @@ Field2d ff;
 
     public Command getAutoCommand() {
         // return new Autonomous(selector.value(), swerveDrive);
-        return autoCommands.getSelected();
+        return autoCommands.get();
         
         // PathPlannerTrajectory traj = PathPlanner.loadPath("zero",
         //         RobotMap.AUTO_PATH_CONSTRAINTS);
