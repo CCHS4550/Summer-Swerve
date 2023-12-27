@@ -56,8 +56,6 @@ public class SwerveModule extends SubsystemBase {
 
         drivingPidController = new PIDController(0.5, 0, 0);
 
-        //get constants from sysid
-        // driveVelocityFeedforward
         this.name = name;
         resetEncoders();
     }
@@ -150,14 +148,6 @@ public class SwerveModule extends SubsystemBase {
         //integrate max speed here
             // isOpenLoop would be true in teleop perhaps because some drivers, like ours prefers it that way
         
-        // double feedforwardVoltage = driveVelocityFeedforward.calculate(state.speedMetersPerSecond);
-        // if (isOpenLoop) {
-        //     // Only using feedfoward here, no PID because in teleop we don't really need to correct it
-        //     driveMotor.setVoltage(feedforwardVoltage);
-        // } else {
-        //     driveMotor.setVoltage(feedforwardVoltage + drivingPidController.calculate(getDriveVelocity(), state.speedMetersPerSecond));
-        // }c
-        // driveMotor.set(drivingPidController.calculate(getDriveVelocity(), state.speedMetersPerSecond));
         driveMotor.set(state.speedMetersPerSecond);
         turnMotor.set(turningPIDController.calculate(getTurnPosition(), state.angle.getRadians()));
     }
