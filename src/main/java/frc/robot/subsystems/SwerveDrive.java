@@ -54,8 +54,6 @@ public class SwerveDrive extends SubsystemBase {
 
         private boolean test = false;
 
-
-
         // Initializing swerve modules. Must include full CCSparkMax object
         // declarations.
         private final Field2d m_field = new Field2d();
@@ -163,22 +161,26 @@ public class SwerveDrive extends SubsystemBase {
         SwerveModulePosition[] swerveModulePositions = new SwerveModulePosition[4];
 
         // ** NetworkTableEntry for the encoders of the turn motors */
-       private GenericEntry abs_Enc_FR_Entry, abs_Enc_FL_Entry, abs_Enc_BR_Entry, abs_Enc_BL_Entry;
+        private GenericEntry abs_Enc_FR_Offset_Entry, abs_Enc_FL_Offset_Entry, abs_Enc_BR_Offset_Entry,
+                        abs_Enc_BL_Offset_Entry;
+        private GenericEntry abs_Enc_FR_Entry, abs_Enc_FL_Entry, abs_Enc_BR_Entry, abs_Enc_BL_Entry;
+        
         private GenericEntry enc_FR_pos_Entry, enc_FL_pos_Entry, enc_BR_pos_Entry, enc_BL_pos_Entry;
         private GenericEntry enc_FR_vel_Entry, enc_FL_vel_Entry, enc_BR_vel_Entry, enc_BL_vel_Entry;
-        //ShuffleBoardLayouts for putting encoders onto the board
-        private ShuffleboardLayout absolute_encoders_list = Shuffleboard.getTab("Encoders")
-                                .getLayout("Absolute Encoders", BuiltInLayouts.kGrid).withSize(2, 2);
-       private ShuffleboardLayout turn_encoders_positions = Shuffleboard.getTab("Encoders")
-                                .getLayout("Turn Encoders Position(Rad)", BuiltInLayouts.kGrid)
-                                .withSize(2, 2);
+       
+        // ShuffleBoardLayouts for putting encoders onto the board
+        private ShuffleboardLayout absolute_encoders_offset_list = Shuffleboard.getTab("Encoders")
+                        .getLayout("Absolute Encoders Offset", BuiltInLayouts.kGrid).withSize(2, 2);
+
+        private ShuffleboardLayout absolute_encoders_no_offset_list = Shuffleboard.getTab("Encoders")
+                        .getLayout("Absolute Encoders No Offset", BuiltInLayouts.kGrid).withSize(2, 2);
+        private ShuffleboardLayout turn_encoders_positions = Shuffleboard.getTab("Encoders")
+                        .getLayout("Turn Encoders Position(Rad)", BuiltInLayouts.kGrid)
+                        .withSize(2, 2);
 
         private ShuffleboardLayout turn_encoder_velocities = Shuffleboard.getTab("Encoders")
-                                .getLayout("Turn Encoders Velocity (Rad / Sec)", BuiltInLayouts.kList)
-                                .withSize(2, 2);
-
-        
-
+                        .getLayout("Turn Encoders Velocity (Rad / Sec)", BuiltInLayouts.kList)
+                        .withSize(2, 2);
 
         /**
          * Creates a new SwerveDrive object. Delays 1 second before setting gyro to 0 to
@@ -186,31 +188,31 @@ public class SwerveDrive extends SubsystemBase {
          */
         public SwerveDrive() {
                 swerveModulePositions[0] = new SwerveModulePosition(0,
-                                new Rotation2d(frontRight.getAbsoluteEncoderRadians()));
+                                new Rotation2d(frontRight.getAbsoluteEncoderRadiansOffset()));
                 swerveModulePositions[1] = new SwerveModulePosition(0,
-                                new Rotation2d(frontLeft.getAbsoluteEncoderRadians()));
+                                new Rotation2d(frontLeft.getAbsoluteEncoderRadiansOffset()));
                 swerveModulePositions[2] = new SwerveModulePosition(0,
-                                new Rotation2d(backRight.getAbsoluteEncoderRadians()));
+                                new Rotation2d(backRight.getAbsoluteEncoderRadiansOffset()));
                 swerveModulePositions[3] = new SwerveModulePosition(0,
-                                new Rotation2d(backLeft.getAbsoluteEncoderRadians()));
+                                new Rotation2d(backLeft.getAbsoluteEncoderRadiansOffset()));
 
                 odometer = new SwerveDriveOdometry(RobotMap.DRIVE_KINEMATICS, new Rotation2d(0), swerveModulePositions);
 
-                 xPID = new PIDController(.7, .1, 0);
-                 yPID = new PIDController(.7, .1, 0);
+                xPID = new PIDController(.7, .1, 0);
+                yPID = new PIDController(.7, .1, 0);
                 // xPID = new PIDController(1, 0, 0);
                 // yPID = new PIDController(1, 0, 0);
-                
-                
 
-        // *TODO: Possibly research profiled PID
-        // turnPID = new ProfiledPIDController(0.5, 0, 0, RobotMap.thetaControllConstraints);
-        turnPID = new PIDController(.7, 0, 0);
-        turnPIDProfiled = new ProfiledPIDController(.7, 0, 0, new Constraints(RobotMap.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND, RobotMap.TURN_RATE_LIMIT));
-                turnPID.enableContinuousInput(-Math.PI,Math.PI);
+                // *TODO: Possibly research profiled PID
+                // turnPID = new ProfiledPIDController(0.5, 0, 0,
+                // RobotMap.thetaControllConstraints);
+                turnPID = new PIDController(.7, 0, 0);
+                turnPIDProfiled = new ProfiledPIDController(.7, 0, 0, new Constraints(
+                                RobotMap.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND, RobotMap.TURN_RATE_LIMIT));
+                turnPID.enableContinuousInput(-Math.PI, Math.PI);
 
                 initShuffleBoardEncoders();
-                
+
                 SmartDashboard.putData("Field", m_field);
                 new Thread(() -> {
                         try {
@@ -264,7 +266,7 @@ public class SwerveDrive extends SubsystemBase {
                 SmartDashboard.putNumber("Pitch", this.getPitch());
                 SmartDashboard.putNumber("Roll", gyro.getRoll());
                 SmartDashboard.putNumber("Yaw", gyro.getYaw());
-                
+
                 SmartDashboard.putNumber("FR", frontRight.getDriveVelocity());
                 SmartDashboard.putNumber("FL", frontLeft.getDriveVelocity());
                 SmartDashboard.putNumber("BR", backRight.getDriveVelocity());
@@ -272,15 +274,13 @@ public class SwerveDrive extends SubsystemBase {
 
                 SmartDashboard.putBoolean("Event Test", test);
 
-
-
                 m_field.setRobotPose(odometer.getPoseMeters());
-                updateShuffleBoardEncoders();        
+                updateShuffleBoardEncoders();
 
                 updateOdometer();
         }
 
-        public void toggleEvent(){
+        public void toggleEvent() {
                 test = !test;
         }
 
@@ -289,10 +289,10 @@ public class SwerveDrive extends SubsystemBase {
          */
         public void stopModules() {
                 SwerveModuleState[] states = new SwerveModuleState[] {
-                                new SwerveModuleState(0, new Rotation2d(frontRight.getAbsoluteEncoderRadians())),
-                                new SwerveModuleState(0, new Rotation2d(frontLeft.getAbsoluteEncoderRadians())),
-                                new SwerveModuleState(0, new Rotation2d(backRight.getAbsoluteEncoderRadians())),
-                                new SwerveModuleState(0, new Rotation2d(backLeft.getAbsoluteEncoderRadians()))
+                                new SwerveModuleState(0, new Rotation2d(frontRight.getAbsoluteEncoderRadiansOffset())),
+                                new SwerveModuleState(0, new Rotation2d(frontLeft.getAbsoluteEncoderRadiansOffset())),
+                                new SwerveModuleState(0, new Rotation2d(backRight.getAbsoluteEncoderRadiansOffset())),
+                                new SwerveModuleState(0, new Rotation2d(backLeft.getAbsoluteEncoderRadiansOffset()))
                 };
                 setModuleStates(states);
         }
@@ -309,7 +309,7 @@ public class SwerveDrive extends SubsystemBase {
                 Logger.getInstance().recordOutput("SwerveModuleStates/SetpointsOptimized", desiredStates);
                 frontRight.setDesiredState(desiredStates[0], openLoop);
                 frontLeft.setDesiredState(desiredStates[1], openLoop);
-                backRight.setDesiredState(desiredStates[2],openLoop);
+                backRight.setDesiredState(desiredStates[2], openLoop);
                 backLeft.setDesiredState(desiredStates[3], openLoop);
         }
 
@@ -323,7 +323,6 @@ public class SwerveDrive extends SubsystemBase {
                 return odometer.getPoseMeters();
         }
 
-
         /**
          * Resets the odometer readings using the gyro, SwerveModulePositions (defined
          * in constructor), and Pose2d.
@@ -335,6 +334,7 @@ public class SwerveDrive extends SubsystemBase {
         public void setOdometry(Pose2d pos) {
                 odometer.resetPosition(getRotation2d(), swerveModulePositions, pos);
         }
+
         public void updateModulePositions() {
                 swerveModulePositions[0] = new SwerveModulePosition(frontRight.getDrivePosition(),
                                 new Rotation2d(frontRight.getTurnPosition()));
@@ -356,7 +356,7 @@ public class SwerveDrive extends SubsystemBase {
         // Odometer used to get Pose2d of the robot.
 
         // xPID and yPID should have the same values.
-        
+
         // PPHolonomicDriveController holonomicDriveController = new
         // PPHolonomicDriveController(xPID, yPID, turnPID);
 
@@ -369,27 +369,27 @@ public class SwerveDrive extends SubsystemBase {
          * @return A command that follows a path.
          */
 
-        //docs: https://github.com/mjansen4857/pathplanner/wiki/PathPlannerLib:-Java-Usage
+        // docs:
+        // https://github.com/mjansen4857/pathplanner/wiki/PathPlannerLib:-Java-Usage
         // public Command followPath(PathPlannerTrajectory traj) {
-        //         return new SequentialCommandGroup(
-        //                         new InstantCommand(() -> {
-        //                                 setOdometry(traj.getInitialHolonomicPose());
-        //                         }),
-        //                         new ParallelCommandGroup(
-        //                                         new FollowPathWithEvents(
-        //                                                         // Path following command
-        //                                                         new PPSwerveControllerCommand(traj, this::getPose,
-        //                                                                         RobotMap.DRIVE_KINEMATICS, xPID,
-        //                                                                         yPID, turnPID, this::setModuleStates,
-        //                                                                         false, this),
-        //                                                         )
-        //                         // new RunCommand(() -> System.out.println(getPose()))
-        //                         ));
+        // return new SequentialCommandGroup(
+        // new InstantCommand(() -> {
+        // setOdometry(traj.getInitialHolonomicPose());
+        // }),
+        // new ParallelCommandGroup(
+        // new FollowPathWithEvents(
+        // // Path following command
+        // new PPSwerveControllerCommand(traj, this::getPose,
+        // RobotMap.DRIVE_KINEMATICS, xPID,
+        // yPID, turnPID, this::setModuleStates,
+        // false, this),
+        // )
+        // // new RunCommand(() -> System.out.println(getPose()))
+        // ));
         // }
 
-        
-        //* I copied this one from documentation */
-        public Command followTrajectoryCommand(PathPlannerTrajectory traj, boolean isFirstPath) { 
+        // * I copied this one from documentation */
+        public Command followTrajectoryCommand(PathPlannerTrajectory traj, boolean isFirstPath) {
                 return new SequentialCommandGroup(
                                 new InstantCommand(() -> {
                                         // Reset odometry for the first path you run during auto
@@ -398,41 +398,50 @@ public class SwerveDrive extends SubsystemBase {
                                         }
                                 }),
                                 new WaitCommand(1),
-                                new FollowPathWithEvents( new PPSwerveControllerCommand(
-                                        traj,
-                                        this::getPose, // Pose supplier
-                                        RobotMap.DRIVE_KINEMATICS, // SwerveDriveKinematics
-                                        xPID, // X controller. Tune these values for your robot. Leaving them 0 will only use feedforwards.
-                                        yPID, // Y controller (usually the same values as X controller)
-                                        turnPID, // Rotation controller. Tune these values for your robot. Leaving them 0 will only use feedforwards.
-                                        this::setModuleStates, // Module states consumer
-                                        true, // Should the path be automatically mirrored depending on alliance color. Optional, defaults to true
-                                        this // Requires this drive subsystem
-                        ), traj.getMarkers(),
-                        RobotContainer.eventMap)
-                               );
+                                new FollowPathWithEvents(new PPSwerveControllerCommand(
+                                                traj,
+                                                this::getPose, // Pose supplier
+                                                RobotMap.DRIVE_KINEMATICS, // SwerveDriveKinematics
+                                                xPID, // X controller. Tune these values for your robot. Leaving them 0
+                                                      // will only use feedforwards.
+                                                yPID, // Y controller (usually the same values as X controller)
+                                                turnPID, // Rotation controller. Tune these values for your robot.
+                                                         // Leaving them 0 will only use feedforwards.
+                                                this::setModuleStates, // Module states consumer
+                                                true, // Should the path be automatically mirrored depending on alliance
+                                                      // color. Optional, defaults to true
+                                                this // Requires this drive subsystem
+                                ), traj.getMarkers(),
+                                                RobotContainer.eventMap));
         }
-        
+
         public Command moveCommand() {
                 List<Translation2d> midpts = new ArrayList<Translation2d>();
                 midpts.add(new Translation2d(1, 0));
-                TrajectoryConfig trajectoryConfig = new TrajectoryConfig(RobotMap.MAX_DRIVE_SPEED_METERS_PER_SECOND, 1).setKinematics(RobotMap.DRIVE_KINEMATICS);
-                Trajectory trajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(0, 0, new Rotation2d(0)),midpts, new Pose2d(2.5, 0, new Rotation2d(0)), trajectoryConfig);
-                return new SwerveControllerCommand(trajectory, this::getPose, RobotMap.DRIVE_KINEMATICS, xPID, yPID, turnPIDProfiled, this::setModuleStates, this);
-        }       
+                TrajectoryConfig trajectoryConfig = new TrajectoryConfig(RobotMap.MAX_DRIVE_SPEED_METERS_PER_SECOND, 1)
+                                .setKinematics(RobotMap.DRIVE_KINEMATICS);
+                Trajectory trajectory = TrajectoryGenerator.generateTrajectory(new Pose2d(0, 0, new Rotation2d(0)),
+                                midpts, new Pose2d(2.5, 0, new Rotation2d(0)), trajectoryConfig);
+                return new SwerveControllerCommand(trajectory, this::getPose, RobotMap.DRIVE_KINEMATICS, xPID, yPID,
+                                turnPIDProfiled, this::setModuleStates, this);
+        }
         // public Command moveTo(double position) {
-        //         return new RunCommand(() -> {
-        //                 double speed = yPID.calculate(frontRight.getDrivePosition(), position) * RobotMap.MAX_DRIVE_SPEED_METERS_PER_SECOND;
-        //                 SwerveModuleState[] states = {new SwerveModuleState(speed, new Rotation2d(frontRight.getTurnPosition())), new SwerveModuleState(speed, new Rotation2d(frontLeft.getTurnPosition())), new SwerveModuleState(speed, new Rotation2d(backRight.getTurnPosition())), new SwerveModuleState(speed, new Rotation2d(backLeft.getTurnPosition()))};
-        //                 setModuleStates(states);
-        //         }, this) {
-        //                 @Override
-        //                 public boolean isFinished() {
-        //                    return Math.abs(frontRight.getDrivePosition() - position) < 0.2;
-        //                 }
-        //         };
+        // return new RunCommand(() -> {
+        // double speed = yPID.calculate(frontRight.getDrivePosition(), position) *
+        // RobotMap.MAX_DRIVE_SPEED_METERS_PER_SECOND;
+        // SwerveModuleState[] states = {new SwerveModuleState(speed, new
+        // Rotation2d(frontRight.getTurnPosition())), new SwerveModuleState(speed, new
+        // Rotation2d(frontLeft.getTurnPosition())), new SwerveModuleState(speed, new
+        // Rotation2d(backRight.getTurnPosition())), new SwerveModuleState(speed, new
+        // Rotation2d(backLeft.getTurnPosition()))};
+        // setModuleStates(states);
+        // }, this) {
+        // @Override
+        // public boolean isFinished() {
+        // return Math.abs(frontRight.getDrivePosition() - position) < 0.2;
         // }
-        
+        // };
+        // }
 
         public void test(double driveSpeed, double turnSpeed) {
                 backRight.driveAndTurn(driveSpeed, turnSpeed);
@@ -485,14 +494,14 @@ public class SwerveDrive extends SubsystemBase {
         }
 
         public void initShuffleBoardEncoders() {
-                abs_Enc_FR_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_list.getTitle())
-                                .add(frontRight.getName(), frontRight.getAbsoluteEncoderRadians()).getEntry();
-                abs_Enc_FL_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_list.getTitle())
-                                .add(frontLeft.getName(), frontLeft.getAbsoluteEncoderRadians()).getEntry();
-                abs_Enc_BR_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_list.getTitle())
-                                .add(backRight.getName(), backRight.getAbsoluteEncoderRadians()).getEntry();
-                abs_Enc_BL_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_list.getTitle())
-                                .add(backLeft.getName(), backLeft.getAbsoluteEncoderRadians()).getEntry();
+                abs_Enc_FR_Offset_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_offset_list.getTitle())
+                                .add(frontRight.getName(), frontRight.getAbsoluteEncoderRadiansOffset()).getEntry();
+                abs_Enc_FL_Offset_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_offset_list.getTitle())
+                                .add(frontLeft.getName(), frontLeft.getAbsoluteEncoderRadiansOffset()).getEntry();
+                abs_Enc_BR_Offset_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_offset_list.getTitle())
+                                .add(backRight.getName(), backRight.getAbsoluteEncoderRadiansOffset()).getEntry();
+                abs_Enc_BL_Offset_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_offset_list.getTitle())
+                                .add(backLeft.getName(), backLeft.getAbsoluteEncoderRadiansOffset()).getEntry();
 
                 enc_FR_pos_Entry = Shuffleboard.getTab("Encoders").getLayout(turn_encoders_positions.getTitle())
                                 .add(frontRight.getName(), frontRight.getTurnPosition()).getEntry();
@@ -503,22 +512,28 @@ public class SwerveDrive extends SubsystemBase {
                 enc_BL_pos_Entry = Shuffleboard.getTab("Encoders").getLayout(turn_encoders_positions.getTitle())
                                 .add(backLeft.getName(), backLeft.getTurnPosition()).getEntry();
 
-                // enc_FR_pos_Entry = Shuffleboard.getTab("Encoders").getLayout(turn_encoder_velocities.getTitle())
-                //                 .add(frontRight.getName() + " V", frontRight.getTurnVelocity()).getEntry();
-                // enc_FL_pos_Entry = Shuffleboard.getTab("Encoders").getLayout(turn_encoder_velocities.getTitle())
-                //                 .add(frontRight.getName() + " V", frontLeft.getTurnVelocity()).getEntry();
-                // enc_BR_pos_Entry = Shuffleboard.getTab("Encoders").getLayout(turn_encoder_velocities.getTitle())
-                //                 .add(frontRight.getName() + " V", backRight.getTurnVelocity()).getEntry();
-                // enc_BL_pos_Entry = Shuffleboard.getTab("Encoders").getLayout(turn_encoder_velocities.getTitle())
-                //                 .add(frontRight.getName() + " V", backLeft.getTurnVelocity()).getEntry();
+                abs_Enc_FR_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_no_offset_list.getTitle())
+                                .add(frontRight.getName(), frontRight.getAbsoluteEncoderRadiansNoOffset()).getEntry();
+                abs_Enc_FL_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_no_offset_list.getTitle())
+                                .add(frontLeft.getName(), frontLeft.getAbsoluteEncoderRadiansNoOffset()).getEntry();
+                abs_Enc_BR_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_no_offset_list.getTitle())
+                                .add(backRight.getName(), backRight.getAbsoluteEncoderRadiansNoOffset()).getEntry();
+                abs_Enc_BL_Entry = Shuffleboard.getTab("Encoders").getLayout(absolute_encoders_no_offset_list.getTitle())
+                                .add(backLeft.getName(), backLeft.getAbsoluteEncoderRadiansNoOffset()).getEntry();
 
         }
 
         public void updateShuffleBoardEncoders() {
-                abs_Enc_FR_Entry.setDouble(frontRight.getAbsoluteEncoderRadians());
-                abs_Enc_FL_Entry.setDouble(frontLeft.getAbsoluteEncoderRadians());
-                abs_Enc_BR_Entry.setDouble(backRight.getAbsoluteEncoderRadians());
-                abs_Enc_BL_Entry.setDouble(backLeft.getAbsoluteEncoderRadians());
+                abs_Enc_FR_Offset_Entry.setDouble(frontRight.getAbsoluteEncoderRadiansOffset());
+                abs_Enc_FL_Offset_Entry.setDouble(frontLeft.getAbsoluteEncoderRadiansOffset());
+                abs_Enc_BR_Offset_Entry.setDouble(backRight.getAbsoluteEncoderRadiansOffset());
+                abs_Enc_BL_Offset_Entry.setDouble(backLeft.getAbsoluteEncoderRadiansOffset());
+
+                abs_Enc_FR_Entry.setDouble(frontRight.getAbsoluteEncoderRadiansOffset());
+                abs_Enc_FL_Entry.setDouble(frontLeft.getAbsoluteEncoderRadiansOffset());
+                abs_Enc_BR_Entry.setDouble(backRight.getAbsoluteEncoderRadiansOffset());
+                abs_Enc_BL_Entry.setDouble(backLeft.getAbsoluteEncoderRadiansOffset());
+
 
                 enc_FR_pos_Entry.setDouble(frontRight.getTurnPosition());
                 enc_FL_pos_Entry.setDouble(frontLeft.getTurnPosition());
@@ -531,13 +546,12 @@ public class SwerveDrive extends SubsystemBase {
                 // enc_BL_vel_Entry.setDouble(backLeft.getTurnVelocity());
         }
 
-        public void printWorld(){
+        public void printWorld() {
                 System.out.println("Hello World!");
         }
 
-        public double getPitch(){
+        public double getPitch() {
                 return gyro.getPitch() - 1.14;
         }
-
 
 }

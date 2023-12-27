@@ -25,7 +25,6 @@ public class SwerveModule extends SubsystemBase {
     private CCSparkMax turnMotor;
 
     private PIDController turningPIDController, drivingPidController;
-    private SimpleMotorFeedforward driveVelocityFeedforward;
 
     private AnalogEncoder absoluteEncoder;
     private double absoluteEncoderOffset;
@@ -100,14 +99,23 @@ public class SwerveModule extends SubsystemBase {
     }
 
     /**
-     * Gets the reading of the absolute encoder.
+     * Gets the reading of the absolute encoder with offset.
      * 
-     * @return The value of the absolute encoder in radians.
+     * @return The value of the absolute encoder in radians with the offset applied.
      */
-    public double getAbsoluteEncoderRadians() {
-        // return absoluteEncoder.getAbsolutePosition() * 2 * Math.PI;
-        // return Units.rotationsToRadians(absoluteEncoder.getAbsolutePosition());
+    public double getAbsoluteEncoderRadiansOffset() {
         return Units.rotationsToRadians(absoluteEncoder.getAbsolutePosition()) - absoluteEncoderOffset;
+    }
+
+
+    /**
+     * Gets the reading of the absolute encoder with offset.
+     * Used for getting the offset. 
+     * 
+     * @return The value of the absolute encoder in radians without the offset applied.
+     */
+    public double getAbsoluteEncoderRadiansNoOffset() {
+        return Units.rotationsToRadians(absoluteEncoder.getAbsolutePosition());
     }
 
     /**
@@ -116,7 +124,7 @@ public class SwerveModule extends SubsystemBase {
      */
     public void resetEncoders() {
         driveMotor.reset();
-        turnMotor.setPosition(getAbsoluteEncoderRadians());
+        turnMotor.setPosition(getAbsoluteEncoderRadiansOffset());
         // turnMotor.reset();
     }
 
